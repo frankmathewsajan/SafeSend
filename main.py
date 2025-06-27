@@ -7,7 +7,6 @@ import serial.tools.list_ports
 # === CONFIGURATION ===
 BAUD_RATE = 9600
 PORT_FILE = 'last_port.txt'
-DURATION = 10  # seconds to log
 
 def get_serial_ports():
     return {port.device for port in serial.tools.list_ports.comports()}
@@ -66,17 +65,19 @@ except Exception as e:
     print(f"❌ Failed to connect to {selected_port}: {e}")
     exit()
 
-# === LIVE CONSOLE OUTPUT ===
-print(f"\n📟 Reading serial data for {DURATION} seconds...\n")
-end_time = time.time() + DURATION
-while time.time() < end_time:
-    if ser.in_waiting:
-        try:
-            line = ser.readline().decode('utf-8', errors='ignore').strip()
-            data = json.loads(line)
-            print(data)
-        except json.JSONDecodeError:
-            print("⚠️ Invalid JSON received:", line)
-
-ser.close()
-print(f"\n✅ Done reading from {selected_port}")
+# === INFINITE LIVE OUTPUT ===
+print(f"\n📟 Reading serial data. Press Ctrl+C to stop.\n")
+try:
+    while True:
+        if ser.in_waiting:
+            try:
+                line = ser.readline().decode('utf-8', errors='ignore').strip()
+                data = json.loads(line)
+                print(data)
+            except json.JSONDecodeError:
+                print("⚠️ Invalid JSON received:", line)
+except KeyboardInterrupt:
+    print(f"\n🛑 Keyboard interrupt detected. Stopping...")
+finally:
+    ser.close()
+    print(f"✅ Serial port {selected_port} closed.")
